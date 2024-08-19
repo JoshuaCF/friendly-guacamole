@@ -72,9 +72,24 @@ void printResult(const char* guess, struct GuessResult result) {
 	printf("\e[0m\n");
 }
 
+void moveTo(unsigned int row, unsigned int col) {
+	printf("\e[%u;%uf", row, col);
+}
+void clearToLineEnd() {
+	printf("\e[0K");
+}
+void clearToScreenEnd() {
+	printf("\e[0J");
+}
+
 #define GUESSES 6
 #define BUF_SIZE 512
 int main() {
+	// Enter alternate screen
+	printf("\e[?1049h");
+	moveTo(0, 0);
+	clearToScreenEnd();
+
 	char buffer[BUF_SIZE];
 	char guessStr[WORD_LEN+1];
 	char target[WORD_LEN+1] = "hello";
@@ -82,17 +97,32 @@ int main() {
 	char guessFormatString[16];
 	sprintf(guessFormatString, "%%%ds", WORD_LEN);
 
+	/* SCREEN LAYOUT
+	 * Status line
+	 * Guess 1
+	 * Guess 2
+	 * Guess ...
+	 * Guess GUESSES
+	 * Typing line
+	 */
+
 	unsigned int guess = 0;
 	while (guess < GUESSES) {
+		moveTo(GUESSES + 2, 1);
+		clearToScreenEnd();
 		fgets(buffer, BUF_SIZE, stdin);
 		if (buffer[WORD_LEN] == '\n') buffer[WORD_LEN] = '\0';
 		if (strlen(buffer) != WORD_LEN) {
-			printf("Guess must be %d characters long\n", WORD_LEN);
+			moveTo(1, 1);
+			printf("Guess must be %d characters long", WORD_LEN);
+			clearToLineEnd();
 			continue;
 		}
 
 		if (!isStringAlpha(buffer)) {
-			printf("Guess must be alphabetic characters\n");
+			moveTo(1, 1);
+			printf("Guess must be alphabetic characters");
+			clearToLineEnd();
 			continue;
 		}
 
@@ -100,14 +130,19 @@ int main() {
 
 		makeLowerCase(guessStr);
 
-			printResult(guessStr, checkGuess(guessStr, target));
+		moveTo(guess + 2, 1);
+		printResult(guessStr, checkGuess(guessStr, target));
+		clearToLineEnd();
 		if (strcmp(guessStr, target) == 0) {
 			printf("Correct!\n");
-			return 0;
+			goto cleanup;
 		}
 		guess++;
 	}
 	printf("Loser\n");
 
+	// Leave alternate screen
+cleanup:
+	printf("\e[?1049h");
 	return 0;
 }
