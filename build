@@ -1,0 +1,4 @@
+#!/bin/bash
+
+FILES=$(find src/ -name "*.c")
+clang -O3 $FILES -o ./bin/worlde -Isrc/headers
